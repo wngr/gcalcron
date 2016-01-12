@@ -41,8 +41,8 @@ parser = argparse.ArgumentParser(
     parents=[tools.argparser])
 parser.add_argument('--reset', default=False,
                         help='Reset all synchronised events')
-
-
+parser.add_argument('--std', default=False, help='Use specified standard start/end commands.')
+useStandardCommands = False
 
 
 class GCalAdapter:
@@ -357,6 +357,19 @@ def parse_commands(event_description, start_time, end_time):
 
   return commands
 
+def parse_standardCommands(start_time, end_time):
+    commands = []
+    command.append({
+        'command': '/usr/bin/python3.4 ~/src/server-config/scripts/zoneminder/scheduleZoneminder.py start',
+        'exec_time': start_time
+    })
+    command.append({
+        'command': '/usr/bin/python3.4 ~/src/server-config/scripts/zoneminder/scheduleZoneminder.py stop',
+        'exec_time': end_time
+    })
+
+
+
 def parse_events(events):
   """
   Transforms the Google Calendar API results into a list of commands
@@ -384,7 +397,10 @@ def parse_events(events):
         'uid': event['id']
       })
     elif event_description:
-      commands = parse_commands(event_description, start_time, end_time)
+      if not useStandardCommands:
+          commands = parse_commands(event_description, start_time, end_time)
+      else:
+          commands = parse_standardCommands(start_time, end_time)
       if commands:
         commandsList.append({
             'uid': event['id'],
@@ -422,6 +438,8 @@ def main(argv):
     g = GCalCron()
     gCalAdapter = GCalAdapter(g.getCalendarId(), flags)
     g.gCalAdapter = gCalAdapter
+    if flags.std:
+        useStandardCommands = True
 
     if flags.reset:
       g.reset_settings()
